@@ -4,11 +4,17 @@
 #ifndef __THREAD_POOL__
 #define __THREAD_POOL__
 
+#include "osqueue.c"
+#include <pthread.h>
+
+typedef struct mission {
+    void (*funcPointer)(void *);
+} Mission;
+
 typedef struct thread_pool {
-    //The field x is here because a struct without fields
-    //doesn't compile. Remove it once you add fields of your own
-    int x;
-    //TODO - FILL THIS WITH YOUR FIELDS
+    int threadsAmount;
+    OSQueue *missionsQueue;
+    pthread_t pthreadArr[];
 } ThreadPool;
 
 ThreadPool *tpCreate(int numOfThreads);
