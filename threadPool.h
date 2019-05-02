@@ -8,6 +8,8 @@
 #include <pthread.h>
 
 typedef struct mission {
+    void *arg;
+
     void (*funcPointer)(void *);
 } Mission;
 
@@ -15,6 +17,7 @@ typedef struct thread_pool {
     int threadsAmount;
     OSQueue *missionsQueue;
     pthread_t *pthreadArr;
+    pthread_mutex_t pthreadMutex;
 } ThreadPool;
 
 ThreadPool *tpCreate(int numOfThreads);
