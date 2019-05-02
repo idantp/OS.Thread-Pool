@@ -14,7 +14,7 @@ typedef struct mission {
 typedef struct thread_pool {
     int threadsAmount;
     OSQueue *missionsQueue;
-    pthread_t pthreadArr[];
+    pthread_t *pthreadArr;
 } ThreadPool;
 
 ThreadPool *tpCreate(int numOfThreads);

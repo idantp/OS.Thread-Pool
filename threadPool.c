@@ -27,6 +27,13 @@ ThreadPool *tpCreate(int numOfThreads) {
         //TODO: make sure its correct
         exit(0);
     }
+    threadPool->threadsAmount = numOfThreads;
+    threadPool->pthreadArr = (pthread_t *) malloc(numOfThreads * sizeof(pthread_t));
+    if (threadPool->pthreadArr == NULL) {
+        errorPrint(MALLOC_ERR_MSG);
+        //TODO: make sure its correct
+        exit(0);
+    }
 }
 
 void tpDestroy(ThreadPool *threadPool, int shouldWaitForTasks) {}
