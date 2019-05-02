@@ -18,6 +18,8 @@ typedef struct thread_pool {
     OSQueue *missionsQueue;
     pthread_t *pthreadArr;
     pthread_mutex_t pthreadMutex;
+    int threadPoolCondition;
+    pthread_cond_t cond;
 } ThreadPool;
 
 ThreadPool *tpCreate(int numOfThreads);
