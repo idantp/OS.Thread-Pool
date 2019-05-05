@@ -3,8 +3,7 @@
 
 #ifndef __THREAD_POOL__
 #define __THREAD_POOL__
-
-#include "osqueue.c"
+#include "osqueue.h"
 #include <pthread.h>
 
 typedef struct mission {
@@ -18,6 +17,10 @@ typedef struct thread_pool {
     OSQueue *missionsQueue;
     pthread_t *pthreadArr;
     pthread_mutex_t pthreadMutex;
+    // 0 = indicates that the threads cannot be assigned with new mission in the queue
+    // 1 = indicates that the thread pool is running
+    // 2 = indicates that the thread pool will finish the mission in the queue but is not
+    //     available for new missions in the queue
     int threadPoolCondition;
     pthread_cond_t cond;
 } ThreadPool;
