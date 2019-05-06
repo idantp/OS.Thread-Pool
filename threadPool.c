@@ -18,6 +18,8 @@
 #define THREADPOOL_RUNNING 1
 #define THREADPOOL_WAIT_FOR_QUEUE 2
 
+//TODO - putting exits where errors can be invoked and check whether I should create free memory
+// function (malloc, init...)
 /**
  * Function Name: errorPrint
  * Function Input: char *errorMsg
