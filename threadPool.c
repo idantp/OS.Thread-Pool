@@ -143,15 +143,22 @@ ThreadPool *tpCreate(int numOfThreads) {
 
 /**
  * Function Name: tpDestroy
- * Function Input:
+ * Function Input: Thread Pool
+ *                 int shouldWaitForTasks: if gets 0 - then only implement the running threads
+ *                                         else - then implement both the running threads and the
+ *                                                missions that were inserted into the queue
  * Function Output: None
- * Function Operation:
+ * Function Operation: once this function is called - inserting new mission to the queue is
+ *                     unavailable (by marking new threadPoolCondition). The function destroys
+ *                     the Thread Pool and implements different missions according to
+ *                     shouldWaitForTasks value.
  */
 void tpDestroy(ThreadPool *threadPool, int shouldWaitForTasks) {
     if (threadPool == NULL) {
         errorPrint(THPOOL_ERR_MSG);
         exit(1);
     }
+    // making sure that the same Thread Pool is not destroyed twice.
     if (threadPool->threadPoolCondition != THREADPOOL_RUNNING) { return; }
     int i;
     if ((pthread_mutex_lock(&(threadPool->pthreadMutex))) != 0) {
@@ -162,19 +169,23 @@ void tpDestroy(ThreadPool *threadPool, int shouldWaitForTasks) {
         threadPool->threadPoolCondition = THREADPOOL_WAIT_FOR_QUEUE;
     } else {
         threadPool->threadPoolCondition = THREADPOOL_FORCE_EXIT;
+        // remove and free the memory of all the missions in the queue
         while (!(osIsQueueEmpty(threadPool->missionsQueue))) {
             Mission *mission = osDequeue(threadPool->missionsQueue);
             free(mission);
         }
     }
+    // update the Thread Pool's threads that the missions queue might have changed
     pthread_cond_broadcast(&(threadPool->cond));
     if ((pthread_mutex_unlock(&(threadPool->pthreadMutex))) != 0) {
         errorPrint(ERROR_MSG);
         exit(1);
     }
+    // implementing all the threads that are still running
     for (i = 0; i < threadPool->threadsAmount; i++) {
         pthread_join(threadPool->pthreadArr[i], NULL);
     }
+    // free the allocated memory
     osDestroyQueue(threadPool->missionsQueue);
     free(threadPool->pthreadArr);
     pthread_cond_destroy(&threadPool->cond);
@@ -187,7 +198,9 @@ void tpDestroy(ThreadPool *threadPool, int shouldWaitForTasks) {
  * Function Input: Thread Pool, *computeFunc - mission(function), the mission's parameter
  * Function Output: -1 if the Thread Pool was already instructed to be destroyed
  *                   0 if the mission insertion to the queue succeeded
- * Function Operation:
+ * Function Operation: the function creates a new mission which consists of the given
+ *                     function and parameter. Then inserts the mission to the mission
+ *                     queue, and notifies all the thread once the queue is no longer empty.
  */
 int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *param) {
     if (threadPool == NULL) {
