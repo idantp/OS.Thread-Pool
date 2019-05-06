@@ -41,8 +41,9 @@ static void *MissionsAllocation(void *arg) {
         errorPrint(THPOOL_NULL_MSG);
         exit(1);
     }
-    // if there are threads that wait for missions - make sure these threads don't take the
-    // same mission via mutexes
+    // while threads wait for new missions in the queue - make sure these threads don't take the
+    // same mission via mutexes and assign each available thread a mission if the missions queue
+    // is not empty.
     while ((!(osIsQueueEmpty(threadPool->missionsQueue)) && threadPool->threadPoolCondition !=
                                                             THREADPOOL_FORCE_EXIT) ||
            (threadPool->threadPoolCondition == THREADPOOL_RUNNING)) {
@@ -50,6 +51,8 @@ static void *MissionsAllocation(void *arg) {
             errorPrint(ERROR_MSG);
             exit(1);
         }
+        // as long as the missions queue is empty and the thread pool is running - wait for
+        // new mission
         while (osIsQueueEmpty(threadPool->missionsQueue) && threadPool->threadPoolCondition ==
                                                             THREADPOOL_RUNNING) {
             // wait until a mission is inserted to the missions queue
@@ -61,7 +64,9 @@ static void *MissionsAllocation(void *arg) {
             errorPrint(ERROR_MSG);
             exit(1);
         }
+        //
         if (mission != NULL) {
+            // implement the given mission
             mission->funcPointer(mission->arg);
             free(mission);
         }
@@ -132,6 +137,7 @@ ThreadPool *tpCreate(int numOfThreads) {
             exit(1);
         }
     }
+    // return the Thread Pool.
     return threadPool;
 }
 
@@ -178,8 +184,9 @@ void tpDestroy(ThreadPool *threadPool, int shouldWaitForTasks) {
 
 /**
  * Function Name: tpInsertTask
- * Function Input:
- * Function Output:
+ * Function Input: Thread Pool, *computeFunc - mission(function), the mission's parameter
+ * Function Output: -1 if the Thread Pool was already instructed to be destroyed
+ *                   0 if the mission insertion to the queue succeeded
  * Function Operation:
  */
 int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *param) {
@@ -190,6 +197,7 @@ int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *para
     // making sure that inserting new missions to the queue's missions is impossible
     // once the Thread Pool is destroyed
     if ((threadPool->threadPoolCondition != THREADPOOL_RUNNING)) { return -1; }
+    // creating a new mission based on the parameters of this function
     Mission *mission = (Mission *) malloc(sizeof(Mission));
     if (mission == NULL) {
         errorPrint(MALLOC_ERR_MSG);
@@ -202,9 +210,11 @@ int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *para
         exit(1);
     }
     int flag = 0;
+    // insert the new mission to the queue
     if (osIsQueueEmpty(threadPool->missionsQueue)) { flag = 1; }
     osEnqueue(threadPool->missionsQueue, mission);
-    // notify all threads that the mission queue is no longer empty
+    // notify all threads that the missions queue is no longer empty (in Mission
+    // Allocation function)
     if (flag == 1) {
         flag = 0;
         if (pthread_cond_broadcast(&(threadPool->cond)) != 0) {

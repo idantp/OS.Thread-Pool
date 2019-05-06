@@ -16,7 +16,7 @@ void test_thread_pool_sanity() {
 
     ThreadPool *tp = tpCreate(5);
 
-    for (i = 0; i < 5; ++i) {
+    for (i = 0; i < 7; ++i) {
         tpInsertTask(tp, hello, NULL);
     }
 
