@@ -222,6 +222,7 @@ int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *para
     mission->arg = param;
     if ((pthread_mutex_lock(&(threadPool->pthreadMutex))) != 0) {
         errorPrint(ERROR_MSG);
+        free(mission);
         exit(1);
     }
     int flag = 0;
@@ -234,11 +235,13 @@ int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *para
         flag = 0;
         if (pthread_cond_broadcast(&(threadPool->cond)) != 0) {
             errorPrint(ERROR_MSG);
+            free(mission);
             exit(1);
         }
     }
     if ((pthread_mutex_unlock(&(threadPool->pthreadMutex))) != 0) {
         errorPrint(ERROR_MSG);
+        free(mission);
         exit(1);
     }
     return 0;
