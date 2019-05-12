@@ -31,6 +31,25 @@ void errorPrint(char *errorMsg) {
     write(FILE_DESC, errorMsg, size);
 }
 
+void freeMemory(ThreadPool* threadPool){
+    int i;
+    pthread_mutex_lock(&(threadPool->pthreadMutex));
+    while(!osIsQueueEmpty(threadPool->missionsQueue)){
+        Mission *mission = (Mission*)(osDequeue(threadPool->missionsQueue));
+        free(mission);
+    }
+    for (i = 0; i < threadPool->threadsAmount; i++) {
+        pthread_cancel(threadPool->pthreadArr[i]);
+    }
+    pthread_mutex_unlock(&(threadPool->pthreadMutex));
+    // free the allocated memory
+    osDestroyQueue(threadPool->missionsQueue);
+    free(threadPool->pthreadArr);
+    pthread_cond_destroy(&threadPool->cond);
+    pthread_mutex_destroy(&threadPool->pthreadMutex);
+    free(threadPool);
+}
+
 /**
  * Function Name: MissionsAllocation
  * Function Input: void *arg - indicates a Thread Pool
@@ -51,6 +70,7 @@ static void *MissionsAllocation(void *arg) {
            (threadPool->threadPoolCondition == THREADPOOL_RUNNING)) {
         if ((pthread_mutex_lock(&(threadPool->pthreadMutex))) != 0) {
             errorPrint(ERROR_MSG);
+            freeMemory(threadPool);
             exit(1);
         }
         // as long as the missions queue is empty and the thread pool is running - wait for
@@ -64,9 +84,10 @@ static void *MissionsAllocation(void *arg) {
         Mission *mission = osDequeue(threadPool->missionsQueue);
         if ((pthread_mutex_unlock(&(threadPool->pthreadMutex))) != 0) {
             errorPrint(ERROR_MSG);
+            freeMemory(threadPool);
             exit(1);
         }
-        //
+        // implement the mission in the current thread
         if (mission != NULL) {
             // implement the given mission
             mission->funcPointer(mission->arg);
@@ -165,6 +186,7 @@ void tpDestroy(ThreadPool *threadPool, int shouldWaitForTasks) {
     int i;
     if ((pthread_mutex_lock(&(threadPool->pthreadMutex))) != 0) {
         errorPrint(ERROR_MSG);
+        freeMemory(threadPool);
         exit(1);
     }
     if (shouldWaitForTasks != 0) {
@@ -181,6 +203,7 @@ void tpDestroy(ThreadPool *threadPool, int shouldWaitForTasks) {
     pthread_cond_broadcast(&(threadPool->cond));
     if ((pthread_mutex_unlock(&(threadPool->pthreadMutex))) != 0) {
         errorPrint(ERROR_MSG);
+        freeMemory(threadPool);
         exit(1);
     }
     // implementing all the threads that are still running
@@ -216,13 +239,14 @@ int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *para
     Mission *mission = (Mission *) malloc(sizeof(Mission));
     if (mission == NULL) {
         errorPrint(MALLOC_ERR_MSG);
+        freeMemory(threadPool);
         exit(1);
     }
     mission->funcPointer = computeFunc;
     mission->arg = param;
     if ((pthread_mutex_lock(&(threadPool->pthreadMutex))) != 0) {
         errorPrint(ERROR_MSG);
-        free(mission);
+        freeMemory(threadPool);
         exit(1);
     }
     int flag = 0;
@@ -234,14 +258,15 @@ int tpInsertTask(ThreadPool *threadPool, void (*computeFunc)(void *), void *para
     if (flag == 1) {
         flag = 0;
         if (pthread_cond_broadcast(&(threadPool->cond)) != 0) {
+            pthread_mutex_unlock(&(threadPool->pthreadMutex));
             errorPrint(ERROR_MSG);
-            free(mission);
+            freeMemory(threadPool);
             exit(1);
         }
     }
     if ((pthread_mutex_unlock(&(threadPool->pthreadMutex))) != 0) {
         errorPrint(ERROR_MSG);
-        free(mission);
+        freeMemory(threadPool);
         exit(1);
     }
     return 0;
