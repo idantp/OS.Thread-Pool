@@ -18,8 +18,6 @@
 #define THREADPOOL_RUNNING 1
 #define THREADPOOL_WAIT_FOR_QUEUE 2
 
-//TODO - putting exits where errors can be invoked and check whether I should create free memory
-// function (malloc, init...)
 /**
  * Function Name: errorPrint
  * Function Input: char *errorMsg
@@ -31,11 +29,11 @@ void errorPrint(char *errorMsg) {
     write(FILE_DESC, errorMsg, size);
 }
 
-void freeMemory(ThreadPool* threadPool){
+void freeMemory(ThreadPool *threadPool) {
     int i;
     pthread_mutex_lock(&(threadPool->pthreadMutex));
-    while(!osIsQueueEmpty(threadPool->missionsQueue)){
-        Mission *mission = (Mission*)(osDequeue(threadPool->missionsQueue));
+    while (!osIsQueueEmpty(threadPool->missionsQueue)) {
+        Mission *mission = (Mission *) (osDequeue(threadPool->missionsQueue));
         free(mission);
     }
     for (i = 0; i < threadPool->threadsAmount; i++) {
