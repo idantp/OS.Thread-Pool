@@ -28,7 +28,7 @@ void errorPrint(char *errorMsg) {
     size_t size = strlen(errorMsg);
     write(FILE_DESC, errorMsg, size);
 }
-
+//f
 void freeMemory(ThreadPool* threadPool){
     int i;
     pthread_mutex_trylock(&(threadPool->pthreadMutex));
