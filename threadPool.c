@@ -28,7 +28,6 @@ void errorPrint(char *errorMsg) {
     size_t size = strlen(errorMsg);
     write(FILE_DESC, errorMsg, size);
 }
-//f
 void freeMemory(ThreadPool* threadPool){
     int i;
     pthread_mutex_trylock(&(threadPool->pthreadMutex));
@@ -44,7 +43,7 @@ void freeMemory(ThreadPool* threadPool){
     osDestroyQueue(threadPool->missionsQueue);
     free(threadPool->pthreadArr);
     pthread_cond_destroy(&threadPool->cond);
-    pthread_mutex_destroy(&threadPool->pthreadMutex);
+    pthread_mutex_destroy(&threadPool->pthreadMutex );
     free(threadPool);
 }
 
