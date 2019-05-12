@@ -29,11 +29,11 @@ void errorPrint(char *errorMsg) {
     write(FILE_DESC, errorMsg, size);
 }
 
-void freeMemory(ThreadPool *threadPool) {
+void freeMemory(ThreadPool* threadPool){
     int i;
-    pthread_mutex_lock(&(threadPool->pthreadMutex));
-    while (!osIsQueueEmpty(threadPool->missionsQueue)) {
-        Mission *mission = (Mission *) (osDequeue(threadPool->missionsQueue));
+    pthread_mutex_trylock(&(threadPool->pthreadMutex));
+    while(!osIsQueueEmpty(threadPool->missionsQueue)){
+        Mission *mission = (Mission*)(osDequeue(threadPool->missionsQueue));
         free(mission);
     }
     for (i = 0; i < threadPool->threadsAmount; i++) {
