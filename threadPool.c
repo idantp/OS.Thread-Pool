@@ -29,14 +29,10 @@ void errorPrint(char *errorMsg) {
     write(FILE_DESC, errorMsg, size);
 }
 void freeMemory(ThreadPool* threadPool){
-    int i;
     pthread_mutex_trylock(&(threadPool->pthreadMutex));
     while(!osIsQueueEmpty(threadPool->missionsQueue)){
         Mission *mission = (Mission*)(osDequeue(threadPool->missionsQueue));
         free(mission);
-    }
-    for (i = 0; i < threadPool->threadsAmount; i++) {
-        pthread_cancel(threadPool->pthreadArr[i]);
     }
     pthread_mutex_unlock(&(threadPool->pthreadMutex));
     // free the allocated memory
